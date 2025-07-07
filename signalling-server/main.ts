@@ -5,7 +5,7 @@ interface PeerConnection {
 
 const peers = new Map<string, PeerConnection>();
 
-Deno.serve((req) => {
+Deno.serve( { port: 8000, hostname: "192.168.1.24" }, (req) => {
 	if (req.headers.get('upgrade') != 'websocket') {
 		return new Response(null, { status: 501 });
 	}

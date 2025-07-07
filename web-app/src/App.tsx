@@ -1,6 +1,8 @@
 import {Box, Button, Container, createTheme, CssBaseline, Paper, Stack, TextField, ThemeProvider} from "@mui/material";
-import {type ChangeEvent, useState} from "react";
+import {type ChangeEvent, useEffect, useState} from "react";
 import {indigo, yellow} from "@mui/material/colors";
+import {webSocket} from "rxjs/webSocket";
+import {Subject, takeUntil} from "rxjs";
 
 const theme = createTheme({
   palette: {
@@ -25,7 +27,31 @@ const theme = createTheme({
   }
 });
 
+const onDestroySubject = new Subject<void>();
+
 function App() {
+
+  useEffect(() => {
+    const wsSubject = webSocket('ws://192.168.1.24:8000');
+
+    wsSubject
+        .pipe(takeUntil(onDestroySubject))
+        .subscribe({
+      next: msg => handleSocketMessage(msg), // Called whenever there is a message from the server.
+      error: err => console.log(err), // Called if at any point WebSocket API signals some kind of error.
+      complete: () => console.log('complete') // Called when connection is closed (for whatever reason).
+    });
+
+    return () => {
+      onDestroySubject.next();
+    }
+  }, []);
+
+  const [peers, setPeers] = useState<Array<string>>([]);
+  function handleSocketMessage(message: unknown) {
+    console.log("message", message);
+  }
+
 
   const [messages, setMessages] = useState<Array<string>>([]);
   const [currentMessage, setCurrentMessage] = useState<string>("");
@@ -39,7 +65,7 @@ function App() {
       event.preventDefault(); // Prevent new line in single-line input
       send();
     }
-  };
+  }
 
   function send() {
     setMessages((oldMessages) => {
