@@ -3,6 +3,7 @@ import {type ChangeEvent, useEffect, useState} from "react";
 import {indigo, yellow} from "@mui/material/colors";
 import {webSocket} from "rxjs/webSocket";
 import {Subject, takeUntil} from "rxjs";
+import type {MessageTypes, PeerId} from "../../shared-interfaces/SocketMessages";
 
 const theme = createTheme({
   palette: {
@@ -32,7 +33,7 @@ const onDestroySubject = new Subject<void>();
 function App() {
 
   useEffect(() => {
-    const wsSubject = webSocket('ws://192.168.1.24:8000');
+    const wsSubject = webSocket<MessageTypes>('ws://192.168.1.24:8000');
 
     wsSubject
         .pipe(takeUntil(onDestroySubject))
@@ -47,9 +48,27 @@ function App() {
     }
   }, []);
 
-  const [peers, setPeers] = useState<Array<string>>([]);
-  function handleSocketMessage(message: unknown) {
+  const [peers, setPeers] = useState<Array<PeerId>>([]);
+  function handleSocketMessage(message: MessageTypes) {
     console.log("message", message);
+    switch (message.type) {
+      case "existingPeers":
+        setPeers(message.peerIds);
+        break;
+      case "newPeer":
+        setPeers([...peers, message.peerId])
+        break;
+      case "peerDisconnected":
+        const peerIdx = peers.findIndex(peerId => message.peerId === peerId);
+        if(peerIdx){
+          setPeers(peers.toSpliced(peerIdx, 1));
+        }
+        break;
+      case "yourId":
+        break;
+      default:
+        console.warn("unhandled case", message);
+    }
   }
 
 
@@ -93,6 +112,10 @@ function App() {
                   </Box>
                 )}
               </Stack>
+            </Paper>
+
+            <Paper sx={{ px: 2 }}>
+              <p>Peers: { peers }</p>
             </Paper>
 
             <Stack direction="row" spacing={1}>

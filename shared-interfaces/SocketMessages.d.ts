@@ -19,3 +19,5 @@ export interface PeerDisconnected {
     type: "peerDisconnected";
     peerId: PeerId;
 }
+
+export type MessageTypes = CurrentUserID | ExistingPeers | NewPeer | PeerDisconnected;
